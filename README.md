@@ -28,6 +28,7 @@ cd ictransport
 source upstage.sh
 ```
 Api будет доступно по адресу http://localhost:8080
+
 Документация api будет доступна по адресу http://localhost:8080/docs
 
 ## Что сделано
