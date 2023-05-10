@@ -27,6 +27,7 @@ git clone https://github.com/la5tway/ictransport.git
 cd ictransport
 source upstage.sh
 ```
+Api будет доступно по адресу http://localhost:8080/docs
 
 ## Что сделано
 - Реализован парсер новостной ленты, полученные результаты сохраняются в базу данных;
