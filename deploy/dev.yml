@@ -1,0 +1,30 @@
+version: "2.9"
+services:
+  adminer:
+    image: adminer
+    ports:
+      - 8090:8080
+
+  api:
+    build:
+      context: ./..
+      dockerfile: ./deploy/Dockerfile
+    ports:
+      - 8080:80
+    environment:
+      DB__TYPE: postgres
+      DB__HOST: "${DB__HOST-db}"
+      DB__PORT: "${DB__PORT-5432}"
+      DB__NAME: "${DB__NAME-postgres}"
+      DB__USER: "${DB__USER-postgres}"
+      DB__PASSWORD: "${DB__PASSWORD-postgres}"
+
+      CRAWLER__DELAY_MINUTES: 1
+
+      APP__ENVIRONMENT: "dev"
+
+      HTTP__HOST: "0.0.0.0"
+      HTTP__PORT: 80
+    volumes:
+      - ./../src:/app/src
+    command: python -m src.http

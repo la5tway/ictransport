@@ -1,0 +1,90 @@
+version: "2.9"
+services:
+  db:
+    image: postgres:14.4
+    command:
+      - "postgres"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "temp_file_limit=10GB"
+      - "-c"
+      - "log_min_duration_statement=200ms"
+      - "-c"
+      - "idle_in_transaction_session_timeout=10s"
+      - "-c"
+      - "lock_timeout=1s"
+      - "-c"
+      - "statement_timeout=60s"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - -c
+      - "tcp_keepalives_idle=600"
+      - -c
+      - "tcp_keepalives_interval=30"
+      - -c
+      - "tcp_keepalives_count=10"
+    environment:
+      POSTGRES_DB: "${DB__NAME-postgres}"
+      POSTGRES_USER: "${DB__USER-postgres}"
+      POSTGRES_PASSWORD: "${DB__PASSWORD-postgres}"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${DB__USER-postgres} -d ${DB__NAME-postgres}'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: ./..
+      dockerfile: ./deploy/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 8080:80
+    environment:
+      DB__TYPE: postgres
+      DB__HOST: "${DB__HOST-db}"
+      DB__PORT: "${DB__PORT-5432}"
+      DB__NAME: "${DB__NAME-postgres}"
+      DB__USER: "${DB__USER-postgres}"
+      DB__PASSWORD: "${DB__PASSWORD-postgres}"
+
+      CRAWLER__DELAY_MINUTES: 10
+
+      APP__ENVIRONMENT: "prod"
+
+      HTTP__HOST: "0.0.0.0"
+      HTTP__PORT: 80
+    healthcheck:
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      test: curl --fail http://localhost:80/health-check || exit 1
+    command: python -m src.http
+
+  db_migration:
+    build:
+      context: ./..
+      dockerfile: ./deploy/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      DB__TYPE: postgres
+      DB__HOST: "${DB__HOST-db}"
+      DB__PORT: "${DB__PORT-5432}"
+      DB__NAME: "${DB__NAME-postgres}"
+      DB__USER: "${DB__USER-postgres}"
+      DB__PASSWORD: "${DB__PASSWORD-postgres}"
+    command: ["python", "-m", "alembic", "upgrade", "head"]
