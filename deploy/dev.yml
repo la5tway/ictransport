@@ -9,8 +9,6 @@ services:
     build:
       context: ./..
       dockerfile: ./deploy/Dockerfile
-    ports:
-      - 8080:80
     environment:
       DB__TYPE: postgres
       DB__HOST: "${DB__HOST-db}"
